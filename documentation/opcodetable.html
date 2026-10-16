@@ -1,0 +1,342 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <title>CHIP-8 Opcode Reference Guide</title>
+    <style>
+        @page { margin: 0; }
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        html { background-color: #ffffff; }
+        @media (prefers-color-scheme: dark) {
+            html { background-color: #1f1f1f; }
+        }
+        body {
+            padding: 24px 0;
+            margin: 0 auto;
+            max-width: 900px !important;
+            border: none !important;
+            background: transparent !important;
+        }
+        .page {
+            height: 297mm;
+            margin: 0 auto 12px auto;
+            padding: 18mm 18mm 12mm 18mm;
+            background-color: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+        @media screen and (max-width: 600px) {
+            body { padding: 16px 0; }
+            .page { margin: 0 auto 8px auto; border: none; padding: 12px 20px; }
+        }
+        .page-content {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .page-content > * + * {
+            margin-top: 16px;
+        }
+        .page-content > :is(h1, h2, h3, h4) + * {
+            margin-top: 6px;
+        }
+        .page-footer {
+            flex-shrink: 0;
+            margin-top: auto;
+            padding-top: 4mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 8.5pt;
+            color: #64748b;
+        }
+        @media print {
+            *, *::before, *::after {
+                box-shadow: none !important;
+                text-shadow: none !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            body { padding: 0; background: none; }
+            .page {
+                margin: 0;
+                border: none;
+                height: 297mm;
+                break-after: page;
+                page-break-after: always;
+            }
+            .page:last-child { break-after: auto; page-break-after: auto; }
+        }
+        [contenteditable]:focus { outline: none; }
+
+        /* Typography & Custom Styles */
+        body {
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            font-size: 10.5pt;
+            line-height: 1.45;
+        }
+        h1 {
+            font-size: 20pt;
+            color: #0f172a;
+            margin: 0 0 4px 0;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        h2 {
+            font-size: 13pt;
+            color: #334155;
+            margin: 0 0 8px 0;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 4px;
+            font-weight: 600;
+        }
+        p {
+            margin: 0 0 10px 0;
+        }
+        .subtitle {
+            font-size: 10pt;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .box {
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .box h3 {
+            margin: 0 0 6px 0;
+            font-size: 10.5pt;
+            color: #0f172a;
+        }
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 8.5pt;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+        th, td {
+            text-align: left;
+            padding: 4px 6px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background: #f1f5f9;
+            color: #0f172a;
+            font-weight: 600;
+        }
+        code {
+            font-family: monospace;
+            background: #e2e8f0;
+            padding: 1px 3px;
+            border-radius: 2px;
+            font-size: 8.5pt;
+        }
+    </style>
+<style data-bard-injected="true">
+@media screen {
+    html {
+        background-color: #ffffff;
+    }
+    body {
+        padding: 8px 0 24px 0;
+    }
+}
+@media screen and (prefers-color-scheme: dark) {
+    html {
+        background-color: #1f1f1f;
+    }
+}
+@media screen and (max-width: 600px) {
+    body {
+        padding: 4px 0 16px 0;
+        margin: 0 auto;
+    }
+}
+</style></head>
+<body>
+<div contenteditable="true">
+
+    <!-- PAGE 1: Intro, Macros & First Half of Opcodes -->
+    <section class="page">
+        <div class="page-content">
+            <div>
+                <div class="subtitle">Emulator Development Reference</div>
+                <h1>CHIP-8 Instruction Set &amp; Unique Macros</h1>
+                <p>A complete technical guide featuring unique descriptive macro names to prevent naming collisions among the multiple load (LD) instructions.</p>
+            </div>
+
+            <div class="grid-2">
+                <div class="box">
+                    <h3>Disambiguated LD &amp; Flow Macros</h3>
+                    <pre>#define CLS                  0x00E0
+#define RET                  0x00EE
+#define JP(nnn)              (0x1000 | ((nnn) &amp; 0x0FFF))
+#define LD_IMM(x, nn)        (0x6000 | (((x)&amp;0xF)&lt;&lt;8) | ((nn)&amp;0xFF))
+#define LD_REG(x, y)         (0x8000 | (((x)&amp;0xF)&lt;&lt;8) | (((y)&amp;0xF)&lt;&lt;4))
+#define LD_INDEX(nnn)        (0xA000 | ((nnn) &amp; 0x0FFF))</pre>
+                </div>
+                <div class="box">
+                    <h3>Timer &amp; IO Macros</h3>
+                    <pre>#define LD_VX_DT(x)          (0xF007 | (((x)&amp;0xF)&lt;&lt;8))
+#define LD_DT_VX(x)          (0xF015 | (((x)&amp;0xF)&lt;&lt;8))
+#define LD_ST_VX(x)          (0xF018 | (((x)&amp;0xF)&lt;&lt;8))
+#define DRW(x, y, n)         (0xD000 | (((x)&amp;0xF)&lt;&lt;8) | (((y)&amp;0xF)&lt;&lt;4) | ((n)&amp;0xF))</pre>
+                </div>
+            </div>
+
+            <div>
+                <h2>Opcode Table (Part 1)</h2>
+                <table>
+                    <thead>
+                        <tr><th>Opcode</th><th>Macro / Mnemonic</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>0nnn</code></td><td><code>SYS(nnn)</code></td><td>Jump to machine code routine at nnn.</td></tr>
+                        <tr><td><code>00E0</code></td><td><code>CLS</code></td><td>Clear display screen.</td></tr>
+                        <tr><td><code>00EE</code></td><td><code>RET</code></td><td>Return from subroutine.</td></tr>
+                        <tr><td><code>1nnn</code></td><td><code>JP(nnn)</code></td><td>Jump to address nnn.</td></tr>
+                        <tr><td><code>2nnn</code></td><td><code>CALL(nnn)</code></td><td>Call subroutine at nnn.</td></tr>
+                        <tr><td><code>3xnn</code></td><td><code>SE(x, nn)</code></td><td>Skip if Vx == nn.</td></tr>
+                        <tr><td><code>4xnn</code></td><td><code>SNE(x, nn)</code></td><td>Skip if Vx != nn.</td></tr>
+                        <tr><td><code>5xy0</code></td><td><code>SE_REG(x, y)</code></td><td>Skip if Vx == Vy.</td></tr>
+                        <tr><td><code>6xnn</code></td><td><code>LD_IMM(x, nn)</code></td><td>Set Vx = nn (Load Immediate).</td></tr>
+                        <tr><td><code>7xnn</code></td><td><code>ADD_IMM(x, nn)</code></td><td>Add nn to Vx.</td></tr>
+                        <tr><td><code>8xy0</code></td><td><code>LD_REG(x, y)</code></td><td>Set Vx = Vy (Load Register).</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <footer class="page-footer">
+            <span>CHIP-8 Reference Guide</span>
+            <span>Page 1 of 2</span>
+        </footer>
+    </section>
+
+    <!-- PAGE 2: Second Half of Opcodes & Conversion Instructions -->
+    <section class="page">
+        <div class="page-content">
+            <div>
+                <h2>Opcode Table (Part 2)</h2>
+                <table>
+                    <thead>
+                        <tr><th>Opcode</th><th>Macro / Mnemonic</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>8xy1</code> / <code>8xy2</code></td><td><code>OR_REG</code> / <code>AND_REG</code></td><td>Bitwise operations between Vx and Vy.</td></tr>
+                        <tr><td><code>8xy3</code> / <code>8xy4</code></td><td><code>XOR_REG</code> / <code>ADD_REG</code></td><td>XOR operation; Add with carry flag VF.</td></tr>
+                        <tr><td><code>8xy5</code> / <code>8xy7</code></td><td><code>SUB_REG</code> / <code>SUBN_REG</code></td><td>Subtract operations setting borrow flag VF.</td></tr>
+                        <tr><td><code>8xy6</code> / <code>8xyE</code></td><td><code>SHR_REG</code> / <code>SHL_REG</code></td><td>Bit shifts storing shifted bit in VF.</td></tr>
+                        <tr><td><code>9xy0</code></td><td><code>SNE_REG(x, y)</code></td><td>Skip if Vx != Vy.</td></tr>
+                        <tr><td><code>Annn</code></td><td><code>LD_INDEX(nnn)</code></td><td>Set index register I to nnn.</td></tr>
+                        <tr><td><code>Bnnn</code></td><td><code>JP_V0(nnn)</code></td><td>Jump to nnn plus V0.</td></tr>
+                        <tr><td><code>Cxnn</code></td><td><code>RND(x, nn)</code></td><td>Random byte masked with nn.</td></tr>
+                        <tr><td><code>Dxyn</code></td><td><code>DRW(x, y, n)</code></td><td>Draw sprite at (Vx, Vy) with height n.</td></tr>
+                        <tr><td><code>Ex9E</code> / <code>ExA1</code></td><td><code>SKP</code> / <code>SKNP</code></td><td>Skip based on key press status.</td></tr>
+                        <tr><td><code>Fx07</code> / <code>Fx0A</code></td><td><code>LD_VX_DT</code> / <code>LD_KEY</code></td><td>Get delay timer or wait for key press.</td></tr>
+                        <tr><td><code>Fx15</code> / <code>Fx18</code></td><td><code>LD_DT_VX</code> / <code>LD_ST_VX</code></td><td>Set delay timer or sound timer.</td></tr>
+                        <tr><td><code>Fx1E</code> / <code>Fx29</code></td><td><code>ADD_I</code> / <code>LD_FONT</code></td><td>Add to I; Set I to font character.</td></tr>
+                        <tr><td><code>Fx33</code> / <code>Fx55</code> / <code>Fx65</code></td><td><code>LD_BCD</code> / <code>LD_STORE</code> / <code>LD_LOAD</code></td><td>BCD encoding, memory register dumps.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="box" style="margin-top: 14px;">
+                <h3>How to Convert into a Neat PDF</h3>
+                <p style="margin-bottom: 6px; font-size: 9.5pt;">You can easily export this layout to a pristine physical PDF document without writing custom scripts from scratch:</p>
+                <ol style="margin: 0; padding-left: 18px; font-size: 9.5pt;">
+                    <li><strong>Save Code:</strong> Save the HTML content above into a local file named <code>chip8.html</code>.</li>
+                    <li><strong>Open in Browser:</strong> Open the file in any modern web browser (Chrome, Firefox, Safari).</li>
+                    <li><strong>Print / Export:</strong> Press <code>Ctrl + P</code> (or <code>Cmd + P</code> on macOS) to open the print dialog.</li>
+                    <li><strong>Settings:</strong> Select destination as <strong>&#34;Save as PDF&#34;</strong>, turn off headers/footers, and enable <strong>Background graphics</strong> to preserve borders and fills.</li>
+                </ol>
+            </div>
+        </div>
+        <footer class="page-footer">
+            <span>CHIP-8 Reference Guide</span>
+            <span>Page 2 of 2</span>
+        </footer>
+    </section>
+
+</div>
+
+<script data-bard-injected="true">
+(function() {
+  async function fetchFifeImageBlobUsingAlr(urlString) {
+    if (urlString.startsWith('blob:') || urlString.startsWith('data:')) {
+      throw new Error('Input URL is already a blob or data URL.');
+    }
+    var url = new URL(urlString, window.location.href);
+    url.searchParams.set('alr', 'yes');
+    for (var i = 0; i < 5; i++) {
+      var response = await fetch(url.toString(), {credentials: 'include'});
+      if (!response.ok) {
+        throw new Error('Fetch received not OK response: ' + response.status);
+      }
+      var contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.startsWith('text/plain')) {
+        var blob = await response.blob();
+        if (blob.size > 0 && blob.type.startsWith('image/')) {
+          return blob;
+        }
+        throw new Error('Fetched blob is not a valid image.');
+      }
+      url = new URL(await response.text());
+    }
+    throw new Error('Exceeded maximum number of redirects.');
+  }
+
+  async function updateImageSourcesUsingAlr() {
+    var imgs = Array.from(document.querySelectorAll('img'));
+    await Promise.all(imgs.map(async function(img) {
+      if (img.src && img.src.includes('googleusercontent')) {
+        try {
+          var blob = await fetchFifeImageBlobUsingAlr(img.src);
+          img.src = URL.createObjectURL(blob);
+        } catch (e) {}
+      }
+    }));
+
+    var elements = document.querySelectorAll('[style*="googleusercontent"]');
+    var urlRegex = /url\((['"]?)(https?:\/\/.*?googleusercontent.*?)\1\)/;
+    await Promise.all(Array.from(elements).map(async function(el) {
+      var bg = el.style.backgroundImage;
+      var match = bg ? bg.match(urlRegex) : null;
+      if (match && match[2]) {
+        try {
+          var blob = await fetchFifeImageBlobUsingAlr(match[2]);
+          var blobUrl = URL.createObjectURL(blob);
+          el.style.backgroundImage = bg.replace(match[2], blobUrl);
+        } catch (e) {}
+      }
+    }));
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateImageSourcesUsingAlr);
+  } else {
+    updateImageSourcesUsingAlr();
+  }
+})();
+</script></body></html>

@@ -1,0 +1,46 @@
+#ifndef CHIP_8_H
+#define CHIP_8_H
+
+/*Macros for opcode patterns*/
+#define nnn_macro ((nnn) & 0x0FFF)
+#define xnn_macro (((x)&0xF) << 8) | ((nn)&0xFF)
+#define xy_macro (((x)&0xF) << 8) | (((y)&0xFF) << 4)
+#define xyn_macro (((x)&0xF) << 8) | ((y)&0xFF) << 4 | ((n)&0xF)
+#define x_macro (((x)&0xF) << 8)
+/*Opcode macros*/
+#define CLS 0x00E0
+#define RET 0x00EE
+#define SYS(nnn) (0x0000 | nnn_macro)
+#define JP(nnn)  (0x1000 | nnn_macro)
+#define CALL(nnn) (0x2000 | nnn_macro)
+#define SE(x, nn) (0x3000 | xnn_macro)
+#define SNE(x, nn) (0x4000 | xnn_macro)
+#define SE_REG(x, y) (0x5000 | xy_macro)
+#define LD_IMM(x, nn) (0x6000 | xnn_macro)
+#define ADD_IMM(x, nn) (0x7000 | xnn_macro)
+#define LD_REG(x,y) (0x8000 | xy_macro)
+#define OR_REG(x,y) (0x8001 | xy_macro)
+#define AND_REG(x,y) (0x8002 | xy_macro)
+#define XOR_REG(x,y) (0x8003 | xy_macro)
+#define ADD_REG(x,y) (0x8004 | xy_macro)
+#define SUB_REG(x,y) (0x8005 | xy_macro)
+#define SHR_REG(x,y) (0x8006 | xy_macro)
+#define SUBN_REG(x,y) (0x8007 | xy_macro)
+#define SHL_REG(x,y) (0x800E | xy_macro)
+#define SNE_REG(x,y) (0x9000 | xy_macro)
+#define LD_INDEX(nnn) (0xA000 | nnn_macro)
+#define JP_V0(nnn) (0xB000 | nnn_macro)
+#define RND(x, nn) (0xC000 | xnn_macro)
+#define DRW(x, y, n) (0xD000 | xyn_macro)
+#define SKP(x) (0xE09E | x_macro)
+#define SKNP(x) (0xE0A1 | x_macro)
+#define LD_VX_DT(x) (0xF007 | x_macro)
+#define LD_KEY(x) (0xF00A | x_macro)
+#define LD_DT_VX(x) (0xF015 | x_macro)
+#define LD_ST_VX(x) (0xF018 | x_macro)
+#define ADD_I(x) (0xF01E | x_macro)
+#define LD_FONT(x) (0xF029 | x_macro)
+#define LD_BCD(x) (0xF033 | x_macro)
+#define LD_STORE(x) (0xF055 | x_macro)
+#define LD_LOAD(x) (0xF065 | x_macro)
+#endif
