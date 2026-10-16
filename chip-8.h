@@ -1,6 +1,6 @@
 #ifndef CHIP_8_H
 #define CHIP_8_H
-
+//NOTE ALL OF THIS IS PROBABLY ABSOLUTELY USELESS!! USE AS A REFERENCE
 /*Macros for opcode patterns*/
 #define nnn_macro ((nnn) & 0x0FFF)
 #define xnn_macro (((x)&0xF) << 8) | ((nn)&0xFF)
