@@ -15,8 +15,8 @@ TARGET = chip32_emulator
 RAYLIB_CFLAGS := $(shell $(PKG_CONFIG) --cflags raylib 2>/dev/null)
 RAYLIB_LIBS := $(shell $(PKG_CONFIG) --libs raylib 2>/dev/null)
 
-# Backwards-compatible fallback for the author's original custom Homebrew
-# prefix (typically ~/.homebrew), if raylib.pc isn't discoverable.
+# Backwards-compatible fallback for custom Raylib prefixes (including the
+# author's original ~/.homebrew and source installs under /usr/local).
 LOCAL_RAYLIB_PREFIX ?= $(HOME)/.homebrew
 ifeq ($(strip $(RAYLIB_LIBS)),)
 ifneq ($(wildcard $(LOCAL_RAYLIB_PREFIX)/include/raylib.h),)
@@ -25,9 +25,17 @@ RAYLIB_LIBS := -L$(LOCAL_RAYLIB_PREFIX)/lib -lraylib
 endif
 endif
 
-# Raylib on macOS may need these system frameworks when not provided by
-# pkg-config. They are not passed to Linux linkers.
+# Static Raylib builds on Linux need their system libraries explicitly when
+# no raylib.pc file is available. Keep these flags Linux-only.
 UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+ifeq ($(strip $(shell $(PKG_CONFIG) --libs raylib 2>/dev/null)),)
+RAYLIB_LIBS += -lGL -lm -lpthread -ldl -lrt -lX11 -lXrandr -lXi -lXcursor -lXinerama
+endif
+endif
+
+# Raylib on macOS may need these system frameworks when not provided by
+# pkg-config. These are not passed to Linux linkers.
 ifeq ($(UNAME_S),Darwin)
 ifeq ($(strip $(shell $(PKG_CONFIG) --libs raylib 2>/dev/null)),)
 RAYLIB_LIBS += -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
