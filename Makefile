@@ -1,15 +1,16 @@
-CXX = g++
-CXXFLAGS = -Wall -std=c++20
+CXX = /usr/bin/clang++
+CXXFLAGS = -std=c++20 -stdlib=libc++ -Wall -Wextra -g
+SRC = main.cpp
+TARGET = chip32_emulator
 
-all: chip8_emulator
+# Homebrew paths and macOS frameworks from tasks.json
+INCLUDES = -I/Users/ljem/.homebrew/include
+LDFLAGS = -L/Users/ljem/.homebrew/lib -lraylib -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
 
+all: $(TARGET)
 
-chip8_emulator: main.o
-	$(CXX) $(CXXFLAGS) -o chip32_emulator main.o
+$(TARGET): $(SRC)
+	$(CXX) $(CXXFLAGS) $(SRC) $(INCLUDES) $(LDFLAGS) -o $(TARGET)
 
-main.o: main.cpp chip-8.h
-	$(CXX) $(CXXFLAGS) -c main.cpp
-
-.PHONY: clean
 clean:
-	rm -f *.o chip8_emulator
+	rm -f $(TARGET)
