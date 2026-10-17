@@ -3,6 +3,7 @@
 
 CXX = $(shell command -v clang++ 2>/dev/null || command -v c++)
 PKG_CONFIG ?= pkg-config
+UNAME_S := $(shell uname -s)
 
 CXXFLAGS ?= -std=c++20 -Wall -Wextra -g
 CPPFLAGS ?=
@@ -15,9 +16,14 @@ TARGET = chip32_emulator
 RAYLIB_CFLAGS := $(shell $(PKG_CONFIG) --cflags raylib 2>/dev/null)
 RAYLIB_LIBS := $(shell $(PKG_CONFIG) --libs raylib 2>/dev/null)
 
-# Backwards-compatible fallback for custom Raylib prefixes (including the
-# author's original ~/.homebrew and source installs under /usr/local).
+# Use the common source-install prefix on Linux, while preserving the
+# author's original custom Homebrew prefix on macOS. Users can override either.
+ifeq ($(UNAME_S),Linux)
+LOCAL_RAYLIB_PREFIX ?= /usr/local
+else
 LOCAL_RAYLIB_PREFIX ?= $(HOME)/.homebrew
+endif
+
 ifeq ($(strip $(RAYLIB_LIBS)),)
 ifneq ($(wildcard $(LOCAL_RAYLIB_PREFIX)/include/raylib.h),)
 RAYLIB_CFLAGS := -I$(LOCAL_RAYLIB_PREFIX)/include
@@ -27,7 +33,6 @@ endif
 
 # Static Raylib builds on Linux need their system libraries explicitly when
 # no raylib.pc file is available. Keep these flags Linux-only.
-UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
 ifeq ($(strip $(shell $(PKG_CONFIG) --libs raylib 2>/dev/null)),)
 RAYLIB_LIBS += -lGL -lm -lpthread -ldl -lrt -lX11 -lXrandr -lXi -lXcursor -lXinerama
